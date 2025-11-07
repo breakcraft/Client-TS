@@ -24,13 +24,15 @@ jobs:
 
       - name: Get repository info
         id: repo-info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Get the repository full name (owner/repo)
           REPO_FULL_NAME="${GITHUB_REPOSITORY}"
           echo "repo_full_name=${REPO_FULL_NAME}" >> $GITHUB_OUTPUT
 
           # Use GitHub API to check if this is a fork and get parent info
-          REPO_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          REPO_INFO=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
             "https://api.github.com/repos/${REPO_FULL_NAME}")
 
           IS_FORK=$(echo "$REPO_INFO" | jq -r '.fork')
@@ -67,7 +69,7 @@ jobs:
             git checkout -b temp-sync-check
 
             # Attempt merge
-            if git merge --no-commit --no-ff upstream/245.2 2>&1 | tee merge_output.txt; then
+            if git merge --no-commit --no-ff upstream/245.2 2>&1; then
               # Check if there are conflicts
               if git diff --name-only --diff-filter=U | grep -q .; then
                 echo "result=conflicts" >> $GITHUB_OUTPUT
@@ -84,8 +86,7 @@ jobs:
             else
               # Merge command failed, likely due to conflicts
               echo "result=conflicts" >> $GITHUB_OUTPUT
-              echo "Merge would result in conflicts:"
-              cat merge_output.txt
+              echo "Merge would result in conflicts"
               git reset --hard HEAD
               exit 1
             fi
