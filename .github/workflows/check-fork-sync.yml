@@ -56,6 +56,10 @@ jobs:
           if git ls-remote --heads upstream | grep -q "refs/heads/245.2"; then
             echo "Upstream has branch 245.2"
 
+            # Get the current branch HEAD
+            CURRENT_HEAD=$(git rev-parse HEAD)
+            UPSTREAM_HEAD=$(git rev-parse upstream/245.2)
+
             # Try to merge upstream/245.2 into current branch (dry-run)
             # Create a temporary branch for testing
             git checkout -b temp-sync-check
@@ -67,12 +71,12 @@ jobs:
                 echo "result=conflicts" >> $GITHUB_OUTPUT
                 echo "Merge would result in conflicts:"
                 git diff --name-only --diff-filter=U
-                git merge --abort
+                git reset --hard HEAD
                 exit 1
               else
                 echo "result=success" >> $GITHUB_OUTPUT
                 echo "Fork can sync without conflicts!"
-                git merge --abort 2>/dev/null || true
+                git reset --hard HEAD
                 exit 0
               fi
             else
@@ -80,7 +84,7 @@ jobs:
               echo "result=conflicts" >> $GITHUB_OUTPUT
               echo "Merge would result in conflicts:"
               cat merge_output.txt
-              git merge --abort 2>/dev/null || true
+              git reset --hard HEAD
               exit 1
             fi
           else
